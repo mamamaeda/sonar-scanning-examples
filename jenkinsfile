@@ -1,0 +1,31 @@
+pipeline {
+    agent any
+    stages {
+        stage('SCM') {
+            steps {
+                // Jenkinsの認証情報で作成したGitLabのアカウントのIDを指定する
+                git credentialsId: '6a92ca9e-9c8c-4b78-9ecc-8d56a071ff5f`, 
+                url: 'https://github.com/mamamaeda/sonar-scanning-examples.git'
+            }
+        }
+        stage('SonarQube') {
+            steps {
+                // サンプルプログラムのディレクトリを指定する
+                dir('sonarqube-scanner-gradle') {
+                    withSonarQubeEnv('MySonarQube') {
+                        sh 'sh gradlew sonarqube -Dsonar.projectKey=jenkins-test'
+                    }
+                   
+                }   
+            }
+        }
+       stage("Quality Gate") {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    // Quality Gateが[Failed]の場合Jobを失敗させる
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+    }
+}
